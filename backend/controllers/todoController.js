@@ -1,65 +1,92 @@
 import db from "../config/db.js";
-//Create Todo
+
+//CREATE TODO
 export const createTodo = async (req, res) => {
+    const { todo } = req.body;
+    const userId = req.user.id;
+
+    if (!todo) {
+        return res.status(400).json({ message: "Todo is required" });
+    }
+
     try {
-        const { username, todo } = req.body;
         await db.execute(
-            "INSERT INTO Todo (username, todo) VALUES (?, ?)",
-            [username, todo]
+            "INSERT INTO todos (user_id, todo) VALUES (?, ?)",
+            [userId, todo]
         );
 
-        res.status(200).json({ message: "Todo created successfully" });
+        res.status(201).json({ message: "Todo created successfully" });
     } catch (error) {
-        console.log("ERROR:", error);
+        console.error("CREATE ERROR:", error);
         res.status(500).json({ error: error.message });
     }
 };
 
 
-//Read Todo
+//READ TODOS 
 export const readTodo = async (req, res) => {
+    const userId = req.user.id;
+
     try {
-        const [rows] = await db.execute(`select * from Todo`)
+        const [rows] = await db.execute(
+            "SELECT * FROM todos WHERE user_id = ?",
+            [userId]
+        );
+
         res.status(200).json(rows);
     } catch (err) {
+        console.error("READ ERROR:", err);
         res.status(500).json({ error: err.message });
     }
 };
 
-//Update Todo
-export const updateTodo = async (req, res) => {
-    const { username, todo } = req.body;
-    const { id } = req.params;
 
-    if (username) {
-        try {
-            await db.execute(
-                "update Todo set username=? where id=?", [username, id]
-            );
-        } catch (error) {
-            console.error(error);
-        }
+//UPDATE TODO 
+export const updateTodo = async (req, res) => {
+    const { id } = req.params;
+    const { todo } = req.body;
+    const userId = req.user.id;
+
+    if (!todo) {
+        return res.status(400).json({ message: "Todo is required" });
     }
-    if (todo) {
-        try {
-            await db.execute(
-                "update Todo set todo=? where id=?", [todo, id]
-            );
-        } catch (error) {
-            console.error(error);
+
+    try {
+        const [result] = await db.execute(
+            "UPDATE todos SET todo = ? WHERE id = ? AND user_id = ?",
+            [todo, id, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Todo not found or unauthorized" });
         }
+
+        res.status(200).json({ message: "Todo updated successfully" });
+    } catch (error) {
+        console.error("UPDATE ERROR:", error);
+        res.status(500).json({ error: error.message });
     }
-    res.send(`Todo for given id=${id} has been updated`);
 };
 
-//Delete Todo
-export const deleteTodo = async (req, res) => {
-    try {
-        const { id } = req.params;
-        await db.execute("DELETE from Todo where id = ?", [id]);
 
-        res.status(200).json({ message: `Todo of given id=${id} has been deleted succesfully` });
+// DELETE TODO 
+export const deleteTodo = async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const [result] = await db.execute(
+            "DELETE FROM todos WHERE id = ? AND user_id = ?",
+            [id, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Todo not found or unauthorized" });
+        }
+
+        res.status(200).json({ message: "Todo deleted successfully" });
     } catch (err) {
+        console.error("DELETE ERROR:", err);
         res.status(500).json({ error: err.message });
     }
 };

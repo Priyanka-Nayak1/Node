@@ -11,3 +11,4 @@ const db = await mysql.createConnection({
 });
 
 export default db;
+

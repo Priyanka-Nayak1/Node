@@ -1,95 +1,25 @@
 import express from 'express';
-import mysql from 'mysql2/promise';
 import dotenv from "dotenv";
 import cors from "cors";
 import todoRoutes from "./routes/todoRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import cookieParser from "cookie-parser";
+import { verifyToken } from './middleware/authMiddleware.js';
 
 const app = express();
 const port = 8080;
 
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}));
 app.use(express.json());
 dotenv.config();
+app.use(cookieParser());
 
-const db_password = process.env.DB_PASSWORD;
-
-//Database connection
-// const db = await mysql.createConnection({
-//     host: "localhost",
-//     user: "root",
-//     password: db_password,
-//     database: "todo_app",
-// });
-
-app.use('/todo', todoRoutes);
-
-
-// //Create Todo
-// app.post("/todo/create", async (req, res) => {
-//     try {
-//         const { username, todo } = req.body;
-//         await db.execute(
-//             "INSERT INTO Todo (username, todo) VALUES (?, ?)",
-//             [username, todo]
-//         );
-
-//         res.status(200).json({ message: "Todo created successfully" });
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-
-// });
-
-// //Read Todo
-// app.get("/todo", async (req, res) => {
-//     try {
-//         const [rows] = await db.execute(`select * from Todo`)
-//         res.status(200).json(rows);
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// })
-
-// //Update Todo
-// app.patch("/todo/:id", async (req, res) => {
-//     const { username, todo } = req.body;
-//     const { id } = req.params;
-
-//     if (username) {
-//         try {
-//             await db.execute(
-//                 "update Todo set username=? where id=?", [username, id]
-//             );
-//         } catch (error) {
-//             console.error(error);
-//         }
-//     }
-//     if (todo) {
-//         try {
-//             await db.execute(
-//                 "update Todo set todo=? where id=?", [todo, id]
-//             );
-//         } catch (error) {
-//             console.error(error);
-//         }
-//     }
-//     res.send(`Todo for given id=${id} has been updated`);
-// });
-
-
-// //Delete
-// app.delete("/todo/:id", async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         await db.execute("DELETE from Todo where id = ?", [id]);
-
-//         res.status(200).json({ message: `Todo of given id=${id} has been deleted succesfully` });
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// });
-
-
+app.use('/auth', authRoutes);
+app.use('/todo', verifyToken, todoRoutes);
 
 
 app.listen(port, () => {
@@ -691,3 +621,4 @@ app.listen(port, () => {
 //         todo VARCHAR(1000) NOT NULL
 //     );
 // `);
+
